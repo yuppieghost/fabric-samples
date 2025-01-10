@@ -44,7 +44,7 @@ Now you are ready to call the deployed smart contract via peer CLI calls. But le
 
 The smart contract supports UTXO ownership based on individual client identities from organizations that are members of the channel. In our scenario, the minter of the tokens will be a member of Org1, while the recipient will belong to Org2. To highlight the connection between the `GetClientIdentity().GetID()` API and the information within a user's certificate, we will register two new identities using the Org1 and Org2 Certificate Authorities (CA's), and then use the CA's to generate each identity's certificate and private key.
 
-First, we need to set the following environment variables to use the the Fabric CA client (and subsequent commands)
+First, we need to set the following environment variables to use the Fabric CA client (and subsequent commands)
 ```
 export PATH=${PWD}/../bin:${PWD}:$PATH
 export FABRIC_CFG_PATH=$PWD/../config/
@@ -99,7 +99,7 @@ Note that we need to call the initialize function before being able to use any f
 Shift back to the Org1 terminal, we'll set the following environment variables to operate the `peer` CLI as the minter identity from Org1.
 ```
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_LOCALMSPID=Org1MSP
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/minter@org1.example.com/msp
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 export CORE_PEER_ADDRESS=localhost:7051
@@ -117,7 +117,7 @@ Now that we have initialized the contract and created the identity of the minter
 Shift back to the Org1 terminal, we'll set the following environment variables to operate the `peer` CLI as the minter identity from Org1.
 ```
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_LOCALMSPID=Org1MSP
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/minter@org1.example.com/msp
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 export CORE_PEER_ADDRESS=localhost:7051
@@ -161,7 +161,7 @@ Let's prepare the Org2 terminal by setting the environment variables for the Org
 ```
 export FABRIC_CFG_PATH=$PWD/../config/
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_LOCALMSPID="Org2MSP"
+export CORE_PEER_LOCALMSPID=Org2MSP
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org2.example.com/users/recipient@org2.example.com/msp
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 export CORE_PEER_ADDRESS=localhost:9051

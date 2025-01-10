@@ -79,11 +79,11 @@ We'll create a digital representation of these cards on the blockchain ledger. T
 
 ## Smart Contract Development
 
-- [Introduction](./docs/SmartContractDev/00-Introduction.md)
-- **Exercise**: [Getting Started with a Smart Contract](./docs/SmartContractDev/01-Exercise-Getting-Started.md)
-- **Exercise**: [Adding a new transaction function](./docs/SmartContractDev/02-Exercise-Adding-tx-function.md)
+- [Introduction](./docs/SmartContractDev/00-Introduction.md) [Español](./docs/SmartContractDev/00-Introduction-ES.md)
+- **Exercise**: [Getting Started with a Smart Contract](./docs/SmartContractDev/01-Exercise-Getting-Started.md) [Español](./docs/SmartContractDev/01-Exercise-Getting-Started-ES.md)
+- **Exercise**: [Adding a new transaction function](./docs/SmartContractDev/02-Exercise-Adding-tx-function.md) [Español](./docs/SmartContractDev/02-Exercise-Adding-tx-function-ES.md)
 - Reference:
-  - [Detailed Test and Debug](./docs/SmartContractDev/03-Test-And-Debug-Reference.md)
+  - [Detailed Test and Debug](./docs/SmartContractDev/03-Test-And-Debug-Reference.md) [Español](./docs/SmartContractDev/03-Test-And-Debug-Reference-ES.md)
 
 ## Client Application Development
 
@@ -96,11 +96,11 @@ We'll create a digital representation of these cards on the blockchain ledger. T
 
 ## Cloud Native Fabric
 
-- [Cloud Ready!](docs/CloudReady/00-setup.md)
-- **Exercise:** [Deploy a Kubernetes Cluster](docs/CloudReady/10-kube.md)
-- **Exercise:** [Deploy a Fabric Network](docs/CloudReady/20-fabric.md)
-- **Exercise:** [Deploy a Smart Contract](docs/CloudReady/30-chaincode.md)
-- **Exercise:** [Deploy a Client Application](docs/CloudReady/40-bananas.md)
+- [Cloud Ready!](docs/CloudReady/00-setup.md) [中文](docs/CloudReady/00-setup-zh.md)
+- **Exercise:** [Deploy a Kubernetes Cluster](docs/CloudReady/10-kube.md) [中文](docs/CloudReady/10-kube-zh.md)
+- **Exercise:** [Deploy a Fabric Network](docs/CloudReady/20-fabric.md) [中文](docs/CloudReady/20-fabric-zh.md) 
+- **Exercise:** [Deploy a Smart Contract](docs/CloudReady/30-chaincode.md)[中文](docs/CloudReady/30-chaincode-zh.md) 
+- **Exercise:** [Deploy a Client Application](docs/CloudReady/40-bananas.md)[中文](docs/CloudReady/40-bananas-zh.md) 
 
 ## Epilogue
 

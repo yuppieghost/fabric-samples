@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -euo pipefail
 
 CHAINCODE_LANGUAGE=${CHAINCODE_LANGUAGE:-javascript}
@@ -23,27 +25,12 @@ function stopNetwork() {
   ./network.sh down
 }
 
-# Run Javascript application
-createNetwork
-print "Initializing Javascript application"
-pushd ../asset-transfer-events/application-javascript
-npm install
-print "Executing app.js"
-node app.js
-popd
-stopNetwork
-print "Remove wallet storage"
-rm -R ../asset-transfer-events/application-javascript/wallet
-
-
 # Run typescript gateway application
 createNetwork
 print "Initializing TypeScript gateway application"
 pushd ../asset-transfer-events/application-gateway-typescript
 npm install
-print "Build app"
-npm run build
-print "Executing dist/app.js"
+print "Start application"
 npm start
 popd
 stopNetwork
@@ -61,7 +48,9 @@ stopNetwork
 createNetwork
 print "Initializing Java gateway application"
 pushd ../asset-transfer-events/application-gateway-java
-print "Executing application"
+print "Executing Gradle application"
 ./gradlew run
+print "Executing Maven application"
+mvn --batch-mode --no-transfer-progress compile exec:java -Dexec.mainClass=App
 popd
 stopNetwork
