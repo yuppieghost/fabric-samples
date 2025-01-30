@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-gateway/pkg/client"
+	"github.com/hyperledger/fabric-gateway/pkg/hash"
 	"github.com/hyperledger/fabric-gateway/pkg/identity"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -33,7 +34,7 @@ const (
 	mspID        = "Org1MSP"
 	certPath     = "../crypto-material/hsm/HSMUser/signcerts/cert.pem"
 	tlsCertPath  = "../../test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt"
-	peerEndpoint = "localhost:7051"
+	peerEndpoint = "dns:///localhost:7051"
 )
 
 var now = time.Now()
@@ -63,7 +64,8 @@ func main() {
 	defer hsmSignClose()
 
 	// Create a Gateway connection for a specific client identity
-	gateway, err := client.Connect(id, client.WithSign(hsmSign), client.WithClientConnection(clientConnection))
+	gateway, err := client.Connect(id, client.WithSign(hsmSign), client.WithHash(hash.SHA256),
+		client.WithClientConnection(clientConnection))
 	if err != nil {
 		panic(err)
 	}
@@ -76,8 +78,20 @@ func main() {
 }
 
 func exampleTransaction(gateway *client.Gateway) {
-	network := gateway.GetNetwork("mychannel")
-	contract := network.GetContract("basic")
+
+	// Override default values for chaincode and channel name as they may differ in testing contexts.
+	channelName := "mychannel"
+	if cname := os.Getenv("CHANNEL_NAME"); cname != "" {
+		channelName = cname
+	}
+
+	chaincodeName := "basic"
+	if ccname := os.Getenv("CHAINCODE_NAME"); ccname != "" {
+		chaincodeName = ccname
+	}
+
+	network := gateway.GetNetwork(channelName)
+	contract := network.GetContract(chaincodeName)
 
 	fmt.Printf("Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments \n")
 
@@ -110,7 +124,7 @@ func newGrpcConnection() *grpc.ClientConn {
 	certPool.AddCert(certificate)
 	transportCredentials := credentials.NewClientTLSFromCert(certPool, "peer0.org1.example.com")
 
-	connection, err := grpc.Dial(peerEndpoint, grpc.WithTransportCredentials(transportCredentials))
+	connection, err := grpc.NewClient(peerEndpoint, grpc.WithTransportCredentials(transportCredentials))
 	if err != nil {
 		panic(fmt.Errorf("failed to evaluate transaction: %w", err))
 	}
@@ -178,6 +192,7 @@ func findSoftHSMLibrary() string {
 		"/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so",
 		"/usr/local/lib/softhsm/libsofthsm2.so",
 		"/usr/lib/libacsp-pkcs11.so",
+		"/opt/homebrew/lib/softhsm/libsofthsm2.so",
 	}
 	pkcs11lib := os.Getenv("PKCS11_LIB")
 	if pkcs11lib != "" {

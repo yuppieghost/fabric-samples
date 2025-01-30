@@ -7,15 +7,16 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
+import io.grpc.Grpc;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
-import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import io.grpc.TlsChannelCredentials;
 import org.hyperledger.fabric.client.CommitException;
 import org.hyperledger.fabric.client.CommitStatusException;
 import org.hyperledger.fabric.client.Contract;
 import org.hyperledger.fabric.client.EndorseException;
 import org.hyperledger.fabric.client.Gateway;
 import org.hyperledger.fabric.client.GatewayException;
+import org.hyperledger.fabric.client.Hash;
 import org.hyperledger.fabric.client.SubmitException;
 import org.hyperledger.fabric.client.identity.Identities;
 import org.hyperledger.fabric.client.identity.Identity;
@@ -34,22 +35,22 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 public final class App {
-	private static final String mspID = "Org1MSP";
-	private static final String channelName = "mychannel";
-	private static final String chaincodeName = "basic";
+	private static final String MSP_ID = System.getenv().getOrDefault("MSP_ID", "Org1MSP");
+	private static final String CHANNEL_NAME = System.getenv().getOrDefault("CHANNEL_NAME", "mychannel");
+	private static final String CHAINCODE_NAME = System.getenv().getOrDefault("CHAINCODE_NAME", "basic");
 
 	// Path to crypto materials.
-	private static final Path cryptoPath = Paths.get("..", "..", "test-network", "organizations", "peerOrganizations", "org1.example.com");
+	private static final Path CRYPTO_PATH = Paths.get("../../test-network/organizations/peerOrganizations/org1.example.com");
 	// Path to user certificate.
-	private static final Path certPath = cryptoPath.resolve(Paths.get("users", "User1@org1.example.com", "msp", "signcerts", "cert.pem"));
+	private static final Path CERT_DIR_PATH = CRYPTO_PATH.resolve(Paths.get("users/User1@org1.example.com/msp/signcerts"));
 	// Path to user private key directory.
-	private static final Path keyDirPath = cryptoPath.resolve(Paths.get("users", "User1@org1.example.com", "msp", "keystore"));
+	private static final Path KEY_DIR_PATH = CRYPTO_PATH.resolve(Paths.get("users/User1@org1.example.com/msp/keystore"));
 	// Path to peer tls certificate.
-	private static final Path tlsCertPath = cryptoPath.resolve(Paths.get("peers", "peer0.org1.example.com", "tls", "ca.crt"));
+	private static final Path TLS_CERT_PATH = CRYPTO_PATH.resolve(Paths.get("peers/peer0.org1.example.com/tls/ca.crt"));
 
 	// Gateway peer end point.
-	private static final String peerEndpoint = "localhost:7051";
-	private static final String overrideAuth = "peer0.org1.example.com";
+	private static final String PEER_ENDPOINT = "localhost:7051";
+	private static final String OVERRIDE_AUTH = "peer0.org1.example.com";
 
 	private final Contract contract;
 	private final String assetId = "asset" + Instant.now().toEpochMilli();
@@ -60,7 +61,11 @@ public final class App {
 		// this endpoint.
 		var channel = newGrpcConnection();
 
-		var builder = Gateway.newInstance().identity(newIdentity()).signer(newSigner()).connection(channel)
+		var builder = Gateway.newInstance()
+                .identity(newIdentity())
+                .signer(newSigner())
+                .hash(Hash.SHA256)
+                .connection(channel)
 				// Default timeouts for different gRPC calls
 				.evaluateOptions(options -> options.withDeadlineAfter(5, TimeUnit.SECONDS))
 				.endorseOptions(options -> options.withDeadlineAfter(15, TimeUnit.SECONDS))
@@ -74,31 +79,31 @@ public final class App {
 		}
 	}
 
-	private static ManagedChannel newGrpcConnection() throws IOException, CertificateException {
-		var tlsCertReader = Files.newBufferedReader(tlsCertPath);
-		var tlsCert = Identities.readX509Certificate(tlsCertReader);
-
-		return NettyChannelBuilder.forTarget(peerEndpoint)
-				.sslContext(GrpcSslContexts.forClient().trustManager(tlsCert).build()).overrideAuthority(overrideAuth)
+	private static ManagedChannel newGrpcConnection() throws IOException {
+		var credentials = TlsChannelCredentials.newBuilder()
+				.trustManager(TLS_CERT_PATH.toFile())
+				.build();
+		return Grpc.newChannelBuilder(PEER_ENDPOINT, credentials)
+				.overrideAuthority(OVERRIDE_AUTH)
 				.build();
 	}
 
 	private static Identity newIdentity() throws IOException, CertificateException {
-		var certReader = Files.newBufferedReader(certPath);
-		var certificate = Identities.readX509Certificate(certReader);
-
-		return new X509Identity(mspID, certificate);
+		try (var certReader = Files.newBufferedReader(getFirstFilePath(CERT_DIR_PATH))) {
+			var certificate = Identities.readX509Certificate(certReader);
+			return new X509Identity(MSP_ID, certificate);
+		}
 	}
 
 	private static Signer newSigner() throws IOException, InvalidKeyException {
-		var keyReader = Files.newBufferedReader(getPrivateKeyPath());
-		var privateKey = Identities.readPrivateKey(keyReader);
-
-		return Signers.newPrivateKeySigner(privateKey);
+		try (var keyReader = Files.newBufferedReader(getFirstFilePath(KEY_DIR_PATH))) {
+			var privateKey = Identities.readPrivateKey(keyReader);
+			return Signers.newPrivateKeySigner(privateKey);
+		}
 	}
 
-	private static Path getPrivateKeyPath() throws IOException {
-		try (var keyFiles = Files.list(keyDirPath)) {
+	private static Path getFirstFilePath(Path dirPath) throws IOException {
+		try (var keyFiles = Files.list(dirPath)) {
 			return keyFiles.findFirst().orElseThrow();
 		}
 	}
@@ -106,10 +111,10 @@ public final class App {
 	public App(final Gateway gateway) {
 		// Get a network instance representing the channel where the smart contract is
 		// deployed.
-		var network = gateway.getNetwork(channelName);
+		var network = gateway.getNetwork(CHANNEL_NAME);
 
 		// Get the smart contract from the network.
-		contract = network.getContract(chaincodeName);
+		contract = network.getContract(CHAINCODE_NAME);
 	}
 
 	public void run() throws GatewayException, CommitException {
@@ -131,7 +136,7 @@ public final class App {
 		// Update an asset which does not exist.
 		updateNonExistentAsset();
 	}
-	
+
 	/**
 	 * This type of transaction would typically only be run once by an application
 	 * the first time it was started after its initial deployment. A new version of
@@ -152,7 +157,7 @@ public final class App {
 		System.out.println("\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger");
 
 		var result = contract.evaluateTransaction("GetAllAssets");
-		
+
 		System.out.println("*** Result: " + prettyJson(result));
 	}
 
@@ -202,7 +207,7 @@ public final class App {
 			throw new RuntimeException("Transaction " + status.getTransactionId() +
 					" failed to commit with status code " + status.getCode());
 		}
-		
+
 		System.out.println("*** Transaction committed successfully");
 	}
 
@@ -210,7 +215,7 @@ public final class App {
 		System.out.println("\n--> Evaluate Transaction: ReadAsset, function returns asset attributes");
 
 		var evaluateResult = contract.evaluateTransaction("ReadAsset", assetId);
-		
+
 		System.out.println("*** Result:" + prettyJson(evaluateResult));
 	}
 
@@ -221,25 +226,16 @@ public final class App {
 	private void updateNonExistentAsset() {
 		try {
 			System.out.println("\n--> Submit Transaction: UpdateAsset asset70, asset70 does not exist and should return an error");
-			
+
 			contract.submitTransaction("UpdateAsset", "asset70", "blue", "5", "Tomoko", "300");
-			
+
 			System.out.println("******** FAILED to return an error");
 		} catch (EndorseException | SubmitException | CommitStatusException e) {
-			System.out.println("*** Successfully caught the error: ");
+			System.out.println("*** Successfully caught the error:");
 			e.printStackTrace(System.out);
 			System.out.println("Transaction ID: " + e.getTransactionId());
-
-			var details = e.getDetails();
-			if (!details.isEmpty()) {
-				System.out.println("Error Details:");
-				for (var detail : details) {
-					System.out.println("- address: " + detail.getAddress() + ", mspId: " + detail.getMspId()
-							+ ", message: " + detail.getMessage());
-				}
-			}
 		} catch (CommitException e) {
-			System.out.println("*** Successfully caught the error: " + e);
+			System.out.println("*** Successfully caught the error:");
 			e.printStackTrace(System.out);
 			System.out.println("Transaction ID: " + e.getTransactionId());
 			System.out.println("Status code: " + e.getCode());

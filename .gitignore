@@ -13,16 +13,18 @@ vendor/
 .idea
 # Dependency directories
 node_modules/
+package-lock.json
 # Ignore Gradle build output directory
 build
-package-lock.json
+# Ignore Maven build output directory
+target
 
 # Eclipse
 .classpath
 .settings
 
 # installed Fabric binaries etc.
-bin/
+/bin/
 builders/
 config/
 external-chaincode/
