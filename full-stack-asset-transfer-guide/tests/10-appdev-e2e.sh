@@ -11,15 +11,12 @@ export FABRIC_CFG_PATH="${WORKSHOP_PATH}/config"
 
 "${WORKSHOP_PATH}/check.sh"
 
-CHAINDODE_PID=
+CHAINCODE_PID=
 
 function exitHook() {
 
   # shut down the npm run
   [ -n "${CHAINCODE_PID}" ] && kill "${CHAINCODE_PID}"
-
-  # and node children spawned by npm.  This could be improved by scraping out the pid for the target node command.
-  [ -n "${CHAINCODE_PID}" ] && killall node
 
   # Shut down microfab
   docker kill microfab &> /dev/null
@@ -39,7 +36,7 @@ source "${WORKSHOP_PATH}/_cfg/uf/org1admin.env"
 cd "${WORKSHOP_PATH}/contracts/asset-transfer-typescript"
 npm install
 npm run build
-npm run start:server-nontls &
+node_modules/.bin/fabric-chaincode-node server --chaincode-address="${CHAINCODE_SERVER_ADDRESS}" --chaincode-id="${CHAINCODE_ID}" &
 CHAINCODE_PID=$!
 
 sleep 5
@@ -47,7 +44,7 @@ sleep 5
 cd "${WORKSHOP_PATH}/applications/trader-typescript"
 export ENDPOINT=org1peer-api.127-0-0-1.nip.io:8080
 export MSP_ID=org1MSP
-export CERTIFICATE=../../_cfg/uf/_msp/org1/org1admin/msp/signcerts/org1admin.pem
+export CERTIFICATE=../../_cfg/uf/_msp/org1/org1admin/msp/signcerts/cert.pem
 export PRIVATE_KEY=../../_cfg/uf/_msp/org1/org1admin/msp/keystore/cert_sk
 npm install
 npm start getAllAssets

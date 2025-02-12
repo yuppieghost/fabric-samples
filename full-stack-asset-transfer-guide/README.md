@@ -79,28 +79,28 @@ We'll create a digital representation of these cards on the blockchain ledger. T
 
 ## Smart Contract Development
 
-- [Introduction](./docs/SmartContractDev/00-Introduction.md)
-- **Exercise**: [Getting Started with a Smart Contract](./docs/SmartContractDev/01-Exercise-Getting-Started.md)
-- **Exercise**: [Adding a new transaction function](./docs/SmartContractDev/02-Exercise-Adding-tx-function.md)
+- [Introduction](./docs/SmartContractDev/00-Introduction.md) [Español](./docs/SmartContractDev/00-Introduction-ES.md)
+- **Exercise**: [Getting Started with a Smart Contract](./docs/SmartContractDev/01-Exercise-Getting-Started.md) [Español](./docs/SmartContractDev/01-Exercise-Getting-Started-ES.md)
+- **Exercise**: [Adding a new transaction function](./docs/SmartContractDev/02-Exercise-Adding-tx-function.md) [Español](./docs/SmartContractDev/02-Exercise-Adding-tx-function-ES.md)
 - Reference:
-  - [Detailed Test and Debug](./docs/SmartContractDev/03-Test-And-Debug-Reference.md)
+  - [Detailed Test and Debug](./docs/SmartContractDev/03-Test-And-Debug-Reference.md) [Español](./docs/SmartContractDev/03-Test-And-Debug-Reference-ES.md)
 
 ## Client Application Development
 
-- [Fabric Gateway](docs/ApplicationDev/01-FabricGateway.md)
-- **Exercise:** [Run the client application](docs/ApplicationDev/02-Exercise-RunApplication.md)
-- [Application overview](docs/ApplicationDev/03-ApplicationOverview.md)
-- **Exercise:** [Implement asset transfer](docs/ApplicationDev/04-Exercise-AssetTransfer.md)
-- [Chaincode events](docs/ApplicationDev/05-ChaincodeEvents.md)
-- **Exercise:** [Use chaincode events](docs/ApplicationDev/06-Exercise-ChaincodeEvents.md)
+- [Fabric Gateway](docs/ApplicationDev/01-FabricGateway.md) [Español](docs/ApplicationDev/01-FabricGateway-ES.md)
+- **Exercise:** [Run the client application](docs/ApplicationDev/02-Exercise-RunApplication.md) [Español](docs/ApplicationDev/02-Exercise-RunApplication-ES.md)
+- [Application overview](docs/ApplicationDev/03-ApplicationOverview.md) [Español](docs/ApplicationDev/03-ApplicationOverview-ES.md)
+- **Exercise:** [Implement asset transfer](docs/ApplicationDev/04-Exercise-AssetTransfer.md) [Español](docs/ApplicationDev/04-Exercise-AssetTransfer-ES.md)
+- [Chaincode events](docs/ApplicationDev/05-ChaincodeEvents.md) [Español](docs/ApplicationDev/05-ChaincodeEvents-ES.md)
+- **Exercise:** [Use chaincode events](docs/ApplicationDev/06-Exercise-ChaincodeEvents.md) [Español](docs/ApplicationDev/06-Exercise-ChaincodeEvents-ES.md)
 
 ## Cloud Native Fabric
 
-- [Cloud Ready!](docs/CloudReady/00-setup.md)
-- **Exercise:** [Deploy a Kubernetes Cluster](docs/CloudReady/10-kube.md)
-- **Exercise:** [Deploy a Fabric Network](docs/CloudReady/20-fabric.md)
-- **Exercise:** [Deploy a Smart Contract](docs/CloudReady/30-chaincode.md)
-- **Exercise:** [Deploy a Client Application](docs/CloudReady/40-bananas.md)
+- [Cloud Ready!](docs/CloudReady/00-setup.md) [中文](docs/CloudReady/00-setup-zh.md)
+- **Exercise:** [Deploy a Kubernetes Cluster](docs/CloudReady/10-kube.md) [中文](docs/CloudReady/10-kube-zh.md)
+- **Exercise:** [Deploy a Fabric Network](docs/CloudReady/20-fabric.md) [中文](docs/CloudReady/20-fabric-zh.md) 
+- **Exercise:** [Deploy a Smart Contract](docs/CloudReady/30-chaincode.md)[中文](docs/CloudReady/30-chaincode-zh.md) 
+- **Exercise:** [Deploy a Client Application](docs/CloudReady/40-bananas.md)[中文](docs/CloudReady/40-bananas-zh.md) 
 
 ## Epilogue
 

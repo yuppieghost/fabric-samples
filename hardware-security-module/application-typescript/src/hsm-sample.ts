@@ -5,16 +5,15 @@
  */
 
 import * as grpc from '@grpc/grpc-js';
+import { connect, Gateway, hash, HSMSigner, HSMSignerFactory, HSMSignerOptions, signers } from '@hyperledger/fabric-gateway';
 import * as crypto from 'crypto';
-import { connect, Gateway, HSMSigner, HSMSignerFactory, HSMSignerOptions, signers } from '@hyperledger/fabric-gateway';
 import * as fs from 'fs';
-import * as jsrsa from 'jsrsasign';
 import * as path from 'path';
 import { TextDecoder } from 'util';
 
 const mspId = 'Org1MSP';
 const user = 'HSMUser';
-const assetId = `asset${Date.now()}`;
+const assetId = `asset${String(Date.now())}`;
 const utf8Decoder = new TextDecoder();
 
 // Sample uses fabric-ca-client generated HSM identities, certificate is located in the signcerts directory
@@ -22,7 +21,7 @@ const utf8Decoder = new TextDecoder();
 
 const certPath = path.resolve(__dirname, '..', '..', 'crypto-material', 'hsm', user, 'signcerts', 'cert.pem');
 
-const tlsCertPath = path.resolve('..', '..', 'test-network','organizations','peerOrganizations', 'org1.example.com', 'peers', 'peer0.org1.example.com', 'tls', 'ca.crt');
+const tlsCertPath = path.resolve(__dirname, '..', '..', '..', 'test-network','organizations','peerOrganizations', 'org1.example.com', 'peers', 'peer0.org1.example.com', 'tls', 'ca.crt');
 const peerEndpoint = 'localhost:7051';
 
 async function main() {
@@ -42,11 +41,12 @@ async function main() {
 
         // Get the signer function and a close function. The close function closes the signer
         // once there is no further need for it.
-        hsmSigner = await newHSMSigner(hsmSignerFactory, credentials.toString());
+        hsmSigner = newHSMSigner(hsmSignerFactory, credentials);
         gateway = connect({
             client,
             identity: { mspId, credentials },
             signer:hsmSigner.signer,
+            hash: hash.sha256,
         });
 
         await exampleTransaction(gateway);
@@ -55,15 +55,18 @@ async function main() {
     } finally {
         gateway?.close();
         client?.close();
-        hsmSignerFactory?.dispose();
-        // close the HSM Signer
         hsmSigner?.close();
+        hsmSignerFactory?.dispose();
     }
 }
 
 async function exampleTransaction(gateway: Gateway):Promise<void> {
-    const network = gateway.getNetwork('mychannel');
-    const contract = network.getContract('basic');
+
+    const channelName = envOrDefault('CHANNEL_NAME', 'mychannel');
+    const chaincodeName = envOrDefault('CHAINCODE_NAME', 'basic');
+
+    const network = gateway.getNetwork(channelName);
+    const contract = network.getContract(chaincodeName);
 
     console.log('\n--> Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments');
 
@@ -83,7 +86,7 @@ async function exampleTransaction(gateway: Gateway):Promise<void> {
     const resultBytes = await contract.evaluateTransaction('ReadAsset', assetId);
 
     const resultJson = utf8Decoder.decode(resultBytes);
-    const result = JSON.parse(resultJson);
+    const result: unknown = JSON.parse(resultJson);
     console.log('*** Result:', result);
 }
 
@@ -97,8 +100,9 @@ async function newGrpcConnection(): Promise<grpc.Client> {
 }
 
 // Create a new HSM Signer
-async function newHSMSigner(hsmSignerFactory: HSMSignerFactory, certificatePEM: string): Promise<HSMSigner> {
-    const ski = getSKIFromCertificate(certificatePEM);
+function newHSMSigner(hsmSignerFactory: HSMSignerFactory, certificatePEM: Buffer): HSMSigner {
+    const certificate = new crypto.X509Certificate(certificatePEM);
+    const ski = getSKIFromCertificate(certificate);
 
     // Options for the signer based on using SoftHSM with Token initialized as follows
     // softhsm2-util --init-token --slot 0 --label "ForFabric" --pin 98765432 --so-pin 1234
@@ -118,6 +122,7 @@ function findSoftHSMPKCS11Lib(): string {
         '/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so',
         '/usr/local/lib/softhsm/libsofthsm2.so',
         '/usr/lib/libacsp-pkcs11.so',
+        '/opt/homebrew/lib/softhsm/libsofthsm2.so'
     ];
     const pkcs11lib = process.env['PKCS11_LIB'];
     if (pkcs11lib) {
@@ -135,23 +140,35 @@ function findSoftHSMPKCS11Lib(): string {
 // fabric-ca-client set's the CKA_ID of the public/private keys in the HSM to a generated SKI
 // value. This function replicates that calculation from a certificate PEM so that the HSM
 // object associated with the certificate can be found
-function getSKIFromCertificate(certificatePEM: string): Buffer {
-    const key = jsrsa.KEYUTIL.getKey(certificatePEM);
-    const uncompressedPoint = getUncompressedPointOnCurve(key as jsrsa.KJUR.crypto.ECDSA);
-    const hashBuffer = crypto.createHash('sha256');
-    hashBuffer.update(uncompressedPoint);
-
-    const digest = hashBuffer.digest('hex');
-    return Buffer.from(digest, 'hex');
+function getSKIFromCertificate(certificate: crypto.X509Certificate): Buffer {
+    const uncompressedPoint = getUncompressedPointOnCurve(certificate.publicKey);
+    return crypto.createHash('sha256').update(uncompressedPoint).digest();
 }
 
-function getUncompressedPointOnCurve(key: jsrsa.KJUR.crypto.ECDSA): Buffer {
-    const xyhex = key.getPublicKeyXYHex();
-    const xBuffer = Buffer.from(xyhex.x, 'hex');
-    const yBuffer = Buffer.from(xyhex.y, 'hex');
-    const uncompressedPrefix = Buffer.from('04', 'hex');
-    const uncompressedPoint = Buffer.concat([uncompressedPrefix, xBuffer, yBuffer]);
-    return uncompressedPoint;
+function getUncompressedPointOnCurve(key: crypto.KeyObject): Buffer {
+    const jwk = key.export({ format: 'jwk' });
+    const x = Buffer.from(assertDefined(jwk.x), 'base64url');
+    const y = Buffer.from(assertDefined(jwk.y), 'base64url');
+    const prefix = Buffer.from('04', 'hex');
+    return Buffer.concat([prefix, x, y]);
 }
 
-main().catch(console.error);
+function assertDefined<T>(value: T | undefined): T {
+    if (value === undefined) {
+        throw new Error('required value was undefined');
+    }
+
+    return value;
+}
+
+/**
+ * envOrDefault() will return the value of an environment variable, or a default value if the variable is undefined.
+ */
+function envOrDefault(key: string, defaultValue: string): string {
+    return process.env[key] || defaultValue;
+}
+
+main().catch((error: unknown) => {
+    console.error('******** FAILED to run the application:', error);
+    process.exitCode = 1;
+});

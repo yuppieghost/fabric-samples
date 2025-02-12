@@ -5,7 +5,7 @@
  */
 
 import * as grpc from '@grpc/grpc-js';
-import { ConnectOptions, Identity, Signer, signers } from '@hyperledger/fabric-gateway';
+import { ConnectOptions, hash, Identity, Signer, signers } from '@hyperledger/fabric-gateway';
 import * as crypto from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
@@ -47,6 +47,7 @@ export async function newConnectOptions(client: grpc.Client): Promise<ConnectOpt
         client,
         identity: await newIdentity(),
         signer: await newSigner(),
+        hash: hash.sha256,
         // Default timeouts for different gRPC calls
         evaluateOptions: () => {
             return { deadline: Date.now() + 5000 }; // 5 seconds
@@ -70,10 +71,11 @@ async function newIdentity(): Promise<Identity> {
 
 async function newSigner(): Promise<Signer> {
     const keyFiles = await fs.readdir(keyDirectoryPath);
-    if (keyFiles.length === 0) {
+    const keyFile = keyFiles[0];
+    if (!keyFile) {
         throw new Error(`No private key files found in directory ${keyDirectoryPath}`);
     }
-    const keyPath = path.resolve(keyDirectoryPath, keyFiles[0]);
+    const keyPath = path.resolve(keyDirectoryPath, keyFile);
     const privateKeyPem = await fs.readFile(keyPath);
     const privateKey = crypto.createPrivateKey(privateKeyPem);
     return signers.newPrivateKeySigner(privateKey);

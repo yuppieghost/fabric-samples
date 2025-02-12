@@ -105,7 +105,7 @@ Note that we need to call the initialize function before being able to use any f
 Shift back to the Org1 terminal, we'll set the following environment variables to operate the `peer` CLI as the minter identity from Org1.
 ```
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_LOCALMSPID=Org1MSP
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/minter@org1.example.com/msp
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 export CORE_PEER_ADDRESS=localhost:7051
@@ -123,7 +123,7 @@ Now that we have initialized the contract and created the identity of the minter
 Shift back to the Org1 terminal, we'll set the following environment variables to operate the `peer` CLI as the minter identity from Org1.
 ```
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_LOCALMSPID=Org1MSP
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/minter@org1.example.com/msp
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 export CORE_PEER_ADDRESS=localhost:7051
@@ -165,7 +165,7 @@ Let's prepare the Org2 terminal by setting the environment variables for the Org
 ```
 export FABRIC_CFG_PATH=$PWD/../config/
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_LOCALMSPID="Org2MSP"
+export CORE_PEER_LOCALMSPID=Org2MSP
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org2.example.com/users/recipient@org2.example.com/msp
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 export CORE_PEER_ADDRESS=localhost:9051
@@ -274,13 +274,13 @@ cp ${PWD}/organizations/peerOrganizations/org1.example.com/msp/config.yaml ${PWD
 
 The minter intends to approve a non-fungible token to be transferred by the operator, but first the operator needs to provide their own client ID as the payment address.
 
-Open a 3rd terminal to represent the operator in Org1 and navigate to fabric-samples/test-network. Set the the environment variables for the Org1 operator user.
+Open a 3rd terminal to represent the operator in Org1 and navigate to fabric-samples/test-network. Set the environment variables for the Org1 operator user.
 
 ```
 export PATH=${PWD}/../bin:${PWD}:$PATH
 export FABRIC_CFG_PATH=$PWD/../config/
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_LOCALMSPID=Org1MSP
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/operator@org1.example.com/msp
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 export CORE_PEER_ADDRESS=localhost:7051
@@ -304,7 +304,7 @@ And then request the approval for the operator to transfer the token.
 
 ```
 # Issue a new token
-peer chaincode invoke $TARGET_TLS_OPTIONS -C mychannel -n token_erc721 -c '{"function":"MintWithTokenURI","Args":["102", "https://example.com/nft102.json"]}' --waitForEvent 
+peer chaincode invoke $TARGET_TLS_OPTIONS -C mychannel -n token_erc721 -c '{"function":"MintWithTokenURI","Args":["102", "https://example.com/nft102.json"]}' --waitForEvent
 
 # The owner approves
 export OPERATOR="x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=operator::/C=US/ST=North Carolina/L=Durham/O=org1.example.com/CN=ca.org1.example.com"

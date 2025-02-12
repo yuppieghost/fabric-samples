@@ -16,6 +16,11 @@ function launch_orderers() {
   kubectl -n $ORG0_NS rollout status deploy/org0-orderer2
   kubectl -n $ORG0_NS rollout status deploy/org0-orderer3
 
+  if  [ "${ORDERER_TYPE}" == "bft" ]; then
+    apply_template kube/org0/org0-orderer4.yaml $ORG0_NS
+    kubectl -n $ORG0_NS rollout status deploy/org0-orderer4
+  fi
+
   pop_fn
 }
 
@@ -52,7 +57,7 @@ function create_node_local_MSP() {
     --id.name       ${id_name} \
     --id.secret     ${id_secret} \
     --id.type       ${node_type} \
-    --url           https://${ca_name}.${DOMAIN} \
+    --url           https://${ca_name}.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls.certfiles $TEMP_DIR/cas/${ca_name}/tlsca-cert.pem \
     --mspdir        $TEMP_DIR/enrollments/${org}/users/${RCAADMIN_USER}/msp \
     || rc=$?        # trap error code from registration without exiting the network driver script"
@@ -115,6 +120,9 @@ function create_local_MSP() {
   create_orderer_local_MSP org0 orderer1
   create_orderer_local_MSP org0 orderer2
   create_orderer_local_MSP org0 orderer3
+  if  [ "${ORDERER_TYPE}" == "bft" ]; then
+    create_orderer_local_MSP org0 orderer4
+  fi
 
   create_peer_local_MSP org1 peer1 $ORG1_NS
   create_peer_local_MSP org1 peer2 $ORG1_NS

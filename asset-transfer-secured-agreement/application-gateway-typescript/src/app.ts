@@ -4,16 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { connect } from '@hyperledger/fabric-gateway';
+import { connect, hash } from '@hyperledger/fabric-gateway';
 
-import { newGrpcConnection, newIdentity, newSigner, tlsCertPathOrg1, peerEndpointOrg1, peerNameOrg1, certPathOrg1, mspIdOrg1, keyDirectoryPathOrg1, tlsCertPathOrg2, peerEndpointOrg2, peerNameOrg2, certPathOrg2, mspIdOrg2, keyDirectoryPathOrg2 } from './connect';
+import { newGrpcConnection, newIdentity, newSigner, tlsCertPathOrg1, peerEndpointOrg1, peerNameOrg1, certDirectoryPathOrg1, mspIdOrg1, keyDirectoryPathOrg1, tlsCertPathOrg2, peerEndpointOrg2, peerNameOrg2, certDirectoryPathOrg2, mspIdOrg2, keyDirectoryPathOrg2 } from './connect';
 import { ContractWrapper } from './contractWrapper';
 import { RED, RESET } from './utils';
 
 const channelName = 'mychannel';
 const chaincodeName = 'secured';
 
-//Use a random key so that we can run multiple times
+// Use a random key so that we can run multiple times
 const now = Date.now().toString();
 let assetKey: string;
 
@@ -28,8 +28,9 @@ async function main(): Promise<void> {
 
     const gatewayOrg1 = connect({
         client: clientOrg1,
-        identity: await newIdentity(certPathOrg1, mspIdOrg1),
+        identity: await newIdentity(certDirectoryPathOrg1, mspIdOrg1),
         signer: await newSigner(keyDirectoryPathOrg1),
+        hash: hash.sha256,
     });
 
     // The gRPC client connection from org2 should be shared by all Gateway connections to this endpoint.
@@ -41,8 +42,9 @@ async function main(): Promise<void> {
 
     const gatewayOrg2 = connect({
         client: clientOrg2,
-        identity: await newIdentity(certPathOrg2, mspIdOrg2),
+        identity: await newIdentity(certDirectoryPathOrg2, mspIdOrg2),
         signer: await newSigner(keyDirectoryPathOrg2),
+        hash: hash.sha256,
     });
 
 
@@ -72,8 +74,8 @@ async function main(): Promise<void> {
         // Org2 is not the owner and does not have the private details, read expected to fail.
         try {
             await contractWrapperOrg2.getAssetPrivateProperties(assetKey, mspIdOrg1);
-        } catch(e) {
-            console.log(`${RED}*** Failed: getAssetPrivateProperties - ${e}${RESET}`);
+        } catch (e) {
+            console.log(`${RED}*** Successfully caught the failure: getAssetPrivateProperties - ${String(e)}${RESET}`);
         }
 
         // Org1 updates the assets public description.
@@ -94,7 +96,7 @@ async function main(): Promise<void> {
                 ownerOrg: mspIdOrg1,
                 publicDescription: `Asset ${assetKey} owned by ${mspIdOrg2} is NOT for sale`});
         } catch(e) {
-            console.log(`${RED}*** Failed: changePublicDescription - ${e}${RESET}`);
+            console.log(`${RED}*** Successfully caught the failure: changePublicDescription - ${String(e)}${RESET}`);
         }
 
         // Read the public details by org1.
@@ -126,14 +128,14 @@ async function main(): Promise<void> {
         try{
             await contractWrapperOrg2.getAssetSalesPrice(assetKey, mspIdOrg1);
         } catch(e) {
-            console.log(`${RED}*** Failed: getAssetSalesPrice - ${e}${RESET}`);
+            console.log(`${RED}*** Successfully caught the failure: getAssetSalesPrice - ${String(e)}${RESET}`);
         }
 
         // Org1 has not agreed to buy so this should fail.
         try{
             await contractWrapperOrg1.getAssetBidPrice(assetKey, mspIdOrg2);
         } catch(e) {
-            console.log(`${RED}*** Failed: getAssetBidPrice - ${e}${RESET}`);
+            console.log(`${RED}*** Successfully caught the failure: getAssetBidPrice - ${String(e)}${RESET}`);
         }
         // Org2 should be able to see the price it has agreed.
         await contractWrapperOrg2.getAssetBidPrice(assetKey, mspIdOrg2);
@@ -143,7 +145,7 @@ async function main(): Promise<void> {
         try{
             await contractWrapperOrg1.transferAsset({ assetId: assetKey, price: 110, tradeId: now}, [ mspIdOrg1, mspIdOrg2 ], mspIdOrg1, mspIdOrg2);
         } catch(e) {
-            console.log(`${RED}*** Failed: transferAsset - ${e}${RESET}`);
+            console.log(`${RED}*** Successfully caught the failure: transferAsset - ${String(e)}${RESET}`);
         }
         // Agree to a sell by Org1, the seller will agree to the bid price of Org2.
         await contractWrapperOrg1.agreeToSell({assetId:assetKey, price:100, tradeId:now});
@@ -168,7 +170,7 @@ async function main(): Promise<void> {
         try{
             await contractWrapperOrg2.transferAsset({ assetId: assetKey, price: 100, tradeId: now}, [ mspIdOrg1, mspIdOrg2 ], mspIdOrg1, mspIdOrg2);
         } catch(e) {
-            console.log(`${RED}*** Failed: transferAsset - ${e}${RESET}`);
+            console.log(`${RED}*** Successfully caught the failure: transferAsset - ${String(e)}${RESET}`);
         }
 
         // Org1 will transfer the asset to Org2.
@@ -188,7 +190,7 @@ async function main(): Promise<void> {
         try{
             await contractWrapperOrg1.getAssetPrivateProperties(assetKey, mspIdOrg2);
         } catch(e) {
-            console.log(`${RED}*** Failed: getAssetPrivateProperties - ${e}${RESET}`);
+            console.log(`${RED}*** Successfully caught the failure: getAssetPrivateProperties - ${String(e)}${RESET}`);
         }
 
         // This is an update to the public state and requires only the owner to endorse.
@@ -209,7 +211,7 @@ async function main(): Promise<void> {
     }
 }
 
-main().catch(error => {
+main().catch((error: unknown) => {
     console.error('******** FAILED to run the application:', error);
     process.exitCode = 1;
 });
