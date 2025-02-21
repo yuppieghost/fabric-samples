@@ -4,6 +4,29 @@
 #
 set -eu
 
+ordererType="etcdraft"
+INCLUDE_CA=false
+
+# parse flags
+while [ $# -ge 1 ] ; do
+  key="$1"
+  case $key in
+  etcdraft )
+    ordererType="etcdraft"
+    ;;
+  BFT )
+    ordererType="BFT"
+    ;;
+  -ca )
+    INCLUDE_CA=true
+    ;;
+  * )
+    ;;
+  esac
+  shift
+done
+
+
 # remove existing artifacts, or proceed on if the directories don't exist
 rm -r "${PWD}"/channel-artifacts || true
 rm -r "${PWD}"/crypto-config || true
@@ -12,20 +35,35 @@ rm -r "${PWD}"/data || true
 # look for binaries in local dev environment /build/bin directory and then in local samples /bin directory
 export PATH="${PWD}"/../../fabric/build/bin:"${PWD}"/../bin:"$PATH"
 
-echo "Generating MSP certificates using cryptogen tool"
-cryptogen generate --config="${PWD}"/crypto-config.yaml
+# if INCLUDE_CA is false (default), then use cryptogen
+if [ "${INCLUDE_CA}" = false ]; then
+
+  echo "Generating MSP certificates using cryptogen tool"
+  cryptogen generate --config="${PWD}"/crypto-config.yaml
+
+else
+
+  mkdir -p "${PWD}"/logs
+
+  # execute the script to configure the default set of enrollments
+  echo "Generating MSP certificates using the Fabric CAs, see results in ./logs/createEnrollments.log"
+  ./ca/createEnrollments.sh > ./logs/createEnrollments.log 2>&1
+
+fi
 
 # set FABRIC_CFG_PATH to configtx.yaml directory that contains the profiles
 export FABRIC_CFG_PATH="${PWD}"
 
-echo "Generating orderer genesis block"
-configtxgen -profile TwoOrgsOrdererGenesis -channelID test-system-channel-name -outputBlock channel-artifacts/genesis.block
+if [ "${ordererType}" = "BFT" ]
+then
+    profile="ChannelUsingBFT"
+    ordererType="BFT"
+    export FABRIC_CFG_PATH="${PWD}/bft-config"
+else
+    profile="ChannelUsingRaft"
+fi
 
-echo "Generating channel create config transaction"
-configtxgen -channelID mychannel -outputCreateChannelTx channel-artifacts/mychannel.tx -profile TwoOrgsChannel
+echo "Generating application channel genesis block with ${ordererType} consensus"
+configtxgen -profile ${profile} -outputBlock ./channel-artifacts/mychannel.block -channelID mychannel
 
-echo "Generating anchor peer update transaction for Org1"
-configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate channel-artifacts/Org1MSPanchors.tx -channelID mychannel -asOrg Org1MSP
 
-echo "Generating anchor peer update transaction for Org2"
-configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate channel-artifacts/Org2MSPanchors.tx -channelID mychannel -asOrg Org2MSP

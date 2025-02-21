@@ -53,20 +53,21 @@ Like other samples, the Fabric test network is used to deploy and run this sampl
 
    # To deploy the go chaincode implementation
    ./network.sh deployCC -ccn private -ccp ../asset-transfer-private-data/chaincode-go  -ccl go -ccep "OR('Org1MSP.peer','Org2MSP.peer')"  -cccg '../asset-transfer-private-data/chaincode-go/collections_config.json' -ccep "OR('Org1MSP.peer','Org2MSP.peer')"
+
+   # To deploy the typescript chaincode implementation
+   ./network.sh deployCC -ccn private -ccp ../asset-transfer-private-data/chaincode-typescript/ -ccl typescript  -ccep "OR('Org1MSP.peer','Org2MSP.peer')" -cccg ../asset-transfer-private-data/chaincode-typescript/collections_config.json
    ```
 
 3. Run the application (from the `asset-transfer-private-data` folder).
    ```
-   # To run the Javascript sample application
-   cd application-javascript
-   npm install
-   node app.js
-
    # To run the Typescript sample application
    cd application-gateway-typescript
    npm install
    npm start
 
+   # To run the Go sample application
+   cd application-gateway-go
+   go run .
    ```
 
 ## Clean up

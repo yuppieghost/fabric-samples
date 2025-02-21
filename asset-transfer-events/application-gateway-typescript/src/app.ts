@@ -5,7 +5,7 @@
  */
 
 import * as grpc from '@grpc/grpc-js';
-import { ChaincodeEvent, CloseableAsyncIterable, connect, Contract, GatewayError, Network } from '@hyperledger/fabric-gateway';
+import { ChaincodeEvent, CloseableAsyncIterable, connect, Contract, GatewayError, hash, Network } from '@hyperledger/fabric-gateway';
 import { TextDecoder } from 'util';
 import { newGrpcConnection, newIdentity, newSigner } from './connect';
 
@@ -14,7 +14,7 @@ const chaincodeName = 'events';
 
 const utf8Decoder = new TextDecoder();
 const now = Date.now();
-const assetId = `asset${now}`;
+const assetId = `asset${String(now)}`;
 
 
 async function main(): Promise<void> {
@@ -23,6 +23,7 @@ async function main(): Promise<void> {
         client,
         identity: await newIdentity(),
         signer: await newSigner(),
+        hash: hash.sha256,
         evaluateOptions: () => {
             return { deadline: Date.now() + 5000 }; // 5 seconds
         },
@@ -60,7 +61,7 @@ async function main(): Promise<void> {
     }
 }
 
-main().catch(error => {
+main().catch((error: unknown) => {
     console.error('******** FAILED to run the application:', error);
     process.exitCode = 1;
 });
@@ -82,7 +83,7 @@ async function readEvents(events: CloseableAsyncIterable<ChaincodeEvent>): Promi
         }
     } catch (error: unknown) {
         // Ignore the read error when events.close() is called explicitly
-        if (!(error instanceof GatewayError) || error.code !== grpc.status.CANCELLED) {
+        if (!(error instanceof GatewayError) || error.code !== grpc.status.CANCELLED.valueOf()) {
             throw error;
         }
     }
@@ -102,7 +103,7 @@ async function createAsset(contract: Contract): Promise<bigint> {
 
     const status = await result.getStatus();
     if (!status.successful) {
-        throw new Error(`failed to commit transaction ${status.transactionId} with status code ${status.code}`);
+        throw new Error(`failed to commit transaction ${status.transactionId} with status code ${String(status.code)}`);
     }
 
     console.log('\n*** CreateAsset committed successfully');
@@ -136,7 +137,7 @@ async function deleteAssetByID(contract: Contract): Promise<void>{
 
 async function replayChaincodeEvents(network: Network, startBlock: bigint): Promise<void> {
     console.log('\n*** Start chaincode event replay');
-    
+
     const events = await network.getChaincodeEvents(chaincodeName, {
         startBlock,
     });

@@ -7,7 +7,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric-contract-api-go/v2/contractapi"
 )
 
 // Define key names for options
@@ -37,13 +37,13 @@ type event struct {
 // This function triggers a Transfer event
 func (s *SmartContract) Mint(ctx contractapi.TransactionContextInterface, amount int) error {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
-		return fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
+		return errors.New("Contract options need to be set before calling any function, call Initialize() to initialize contract")
 	}
 
 	// Check minter authorization - this sample assumes Org1 is the central banker with privilege to mint new tokens
@@ -52,7 +52,7 @@ func (s *SmartContract) Mint(ctx contractapi.TransactionContextInterface, amount
 		return fmt.Errorf("failed to get MSPID: %v", err)
 	}
 	if clientMSPID != "Org1MSP" {
-		return fmt.Errorf("client is not authorized to mint new tokens")
+		return errors.New("client is not authorized to mint new tokens")
 	}
 
 	// Get ID of submitting client identity
@@ -62,7 +62,7 @@ func (s *SmartContract) Mint(ctx contractapi.TransactionContextInterface, amount
 	}
 
 	if amount <= 0 {
-		return fmt.Errorf("mint amount must be a positive integer")
+		return errors.New("mint amount must be a positive integer")
 	}
 
 	currentBalanceBytes, err := ctx.GetStub().GetState(minter)
@@ -135,13 +135,13 @@ func (s *SmartContract) Mint(ctx contractapi.TransactionContextInterface, amount
 // This function triggers a Transfer event
 func (s *SmartContract) Burn(ctx contractapi.TransactionContextInterface, amount int) error {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
-		return fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
+		return errors.New("Contract options need to be set before calling any function, call Initialize() to initialize contract")
 	}
 	// Check minter authorization - this sample assumes Org1 is the central banker with privilege to burn new tokens
 	clientMSPID, err := ctx.GetClientIdentity().GetMSPID()
@@ -149,7 +149,7 @@ func (s *SmartContract) Burn(ctx contractapi.TransactionContextInterface, amount
 		return fmt.Errorf("failed to get MSPID: %v", err)
 	}
 	if clientMSPID != "Org1MSP" {
-		return fmt.Errorf("client is not authorized to mint new tokens")
+		return errors.New("client is not authorized to mint new tokens")
 	}
 
 	// Get ID of submitting client identity
@@ -231,10 +231,10 @@ func (s *SmartContract) Burn(ctx contractapi.TransactionContextInterface, amount
 // This function triggers a Transfer event
 func (s *SmartContract) Transfer(ctx contractapi.TransactionContextInterface, recipient string, amount int) error {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -268,10 +268,10 @@ func (s *SmartContract) Transfer(ctx contractapi.TransactionContextInterface, re
 // BalanceOf returns the balance of the given account
 func (s *SmartContract) BalanceOf(ctx contractapi.TransactionContextInterface, account string) (int, error) {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return 0, fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return 0, fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -293,10 +293,10 @@ func (s *SmartContract) BalanceOf(ctx contractapi.TransactionContextInterface, a
 // ClientAccountBalance returns the balance of the requesting client's account
 func (s *SmartContract) ClientAccountBalance(ctx contractapi.TransactionContextInterface) (int, error) {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return 0, fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return 0, fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -326,10 +326,10 @@ func (s *SmartContract) ClientAccountBalance(ctx contractapi.TransactionContextI
 // Users can use this function to get their own account id, which they can then give to others as the payment address
 func (s *SmartContract) ClientAccountID(ctx contractapi.TransactionContextInterface) (string, error) {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return "", fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return "", fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -347,10 +347,10 @@ func (s *SmartContract) ClientAccountID(ctx contractapi.TransactionContextInterf
 // TotalSupply returns the total token supply
 func (s *SmartContract) TotalSupply(ctx contractapi.TransactionContextInterface) (int, error) {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return 0, fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return 0, fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -381,10 +381,10 @@ func (s *SmartContract) TotalSupply(ctx contractapi.TransactionContextInterface)
 // This function triggers an Approval event
 func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, spender string, value int) error {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -427,10 +427,10 @@ func (s *SmartContract) Approve(ctx contractapi.TransactionContextInterface, spe
 // Allowance returns the amount still available for the spender to withdraw from the owner
 func (s *SmartContract) Allowance(ctx contractapi.TransactionContextInterface, owner string, spender string) (int, error) {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return 0, fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return 0, fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -466,10 +466,10 @@ func (s *SmartContract) Allowance(ctx contractapi.TransactionContextInterface, o
 // This function triggers a Transfer event
 func (s *SmartContract) TransferFrom(ctx contractapi.TransactionContextInterface, from string, to string, value int) error {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -539,10 +539,10 @@ func (s *SmartContract) TransferFrom(ctx contractapi.TransactionContextInterface
 
 func (s *SmartContract) Name(ctx contractapi.TransactionContextInterface) (string, error) {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return "", fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return "", fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -561,10 +561,10 @@ func (s *SmartContract) Name(ctx contractapi.TransactionContextInterface) (strin
 
 func (s *SmartContract) Symbol(ctx contractapi.TransactionContextInterface) (string, error) {
 
-	//check if contract has been intilized first
+	// Check if contract has been intilized first
 	initialized, err := checkInitialized(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to check if contract ia already initialized: %v", err)
+		return "", fmt.Errorf("failed to check if contract is already initialized: %v", err)
 	}
 	if !initialized {
 		return "", fmt.Errorf("Contract options need to be set before calling any function, call Initialize() to initialize contract")
@@ -593,7 +593,7 @@ func (s *SmartContract) Initialize(ctx contractapi.TransactionContextInterface, 
 		return false, fmt.Errorf("client is not authorized to initialize contract")
 	}
 
-	//check contract options are not already set, client is not authorized to change them once intitialized
+	// Check contract options are not already set, client is not authorized to change them once intitialized
 	bytes, err := ctx.GetStub().GetState(nameKey)
 	if err != nil {
 		return false, fmt.Errorf("failed to get Name: %v", err)
@@ -695,14 +695,14 @@ func add(b int, q int) (int, error) {
 	var sum int
 	sum = q + b
 
-	if (sum < q) == (b >= 0 && q >= 0) {
+	if (sum < q || sum < b) == (b >= 0 && q >= 0) {
 		return 0, fmt.Errorf("Math: addition overflow occurred %d + %d", b, q)
 	}
 
 	return sum, nil
 }
 
-//Checks that contract options have been already initialized
+// Checks that contract options have been already initialized
 func checkInitialized(ctx contractapi.TransactionContextInterface) (bool, error) {
 	tokenName, err := ctx.GetStub().GetState(nameKey)
 	if err != nil {
@@ -719,13 +719,15 @@ func checkInitialized(ctx contractapi.TransactionContextInterface) (bool, error)
 // sub two number checking for overflow
 func sub(b int, q int) (int, error) {
 
-	// Check overflow
+	// sub two number checking
+	if q <= 0 {
+		return 0, fmt.Errorf("Error: the subtraction number is %d, it should be greater than 0", q)
+	}
+	if b < q {
+		return 0, fmt.Errorf("Error: the number %d is not enough to be subtracted by %d", b, q)
+	}
 	var diff int
 	diff = b - q
-
-	if (diff > b) == (b >= 0 && q >= 0) {
-		return 0, fmt.Errorf("Math: Subtraction overflow occurred  %d - %d", b, q)
-	}
 
 	return diff, nil
 }

@@ -76,7 +76,7 @@ nginx:
     #!/bin/bash
     kubectl apply -k https://github.com/hyperledger-labs/fabric-operator.git/config/ingress/{{ cluster_runtime }}
 
-    sleep 10
+    sleep 20
 
     kubectl wait --namespace ingress-nginx \
       --for=condition=ready pod \
@@ -168,15 +168,16 @@ microfab: microfab-down
             }
 
         ],
-        "capability_level":"V2_0"
+        "capability_level":"V2_5"
     }'
 
     mkdir -p $CFG
     echo
     echo "Stating microfab...."
 
-    docker run --name microfab -p 8080:8080 --add-host host.docker.internal:host-gateway --rm -d -e MICROFAB_CONFIG="${MICROFAB_CONFIG}"  ibmcom/ibp-microfab:0.0.16
-    sleep 5
+    timeout 60s bash -c \
+        'docker run --name microfab -p 8080:8080 --add-host host.docker.internal:host-gateway --rm -d -e MICROFAB_CONFIG="${MICROFAB_CONFIG}" ghcr.io/hyperledger-labs/microfab:latest \
+        && docker logs -f microfab | grep --max-count=1 "Microfab started"'
 
     curl -s http://console.127-0-0-1.nip.io:8080/ak/api/v1/components | weft microfab -w $CFG/_wallets -p $CFG/_gateways -m $CFG/_msp -f
     cat << EOF > $CFG/org1admin.env
@@ -186,6 +187,7 @@ microfab: microfab-down
     export FABRIC_CFG_PATH=$CWDIR/config
     export CORE_PEER_CLIENT_CONNTIMEOUT=15s
     export CORE_PEER_DELIVERYCLIENT_CONNTIMEOUT=15s
+    export ORDERER_ENDPOINT=orderer-api.127-0-0-1.nip.io:8080
     EOF
 
     cat << EOF > $CFG/org2admin.env
@@ -195,6 +197,7 @@ microfab: microfab-down
     export FABRIC_CFG_PATH=$CWDIR/config
     export CORE_PEER_CLIENT_CONNTIMEOUT=15s
     export CORE_PEER_DELIVERYCLIENT_CONNTIMEOUT=15s
+    export ORDERER_ENDPOINT=orderer-api.127-0-0-1.nip.io:8080
     EOF
 
     echo
@@ -220,14 +223,15 @@ debugcc:
     export CORE_PEER_ADDRESS=org1peer-api.127-0-0-1.nip.io:8080
     export CORE_PEER_CLIENT_CONNTIMEOUT=15s
     export CORE_PEER_DELIVERYCLIENT_CONNTIMEOUT=15s
+    export ORDERER_ENDPOINT=orderer-api.127-0-0-1.nip.io:8080
 
     echo "CHAINCODE_ID=${CHAINCODE_ID}"
 
     set -x && peer lifecycle chaincode install asset-transfer.tgz &&     { set +x; } 2>/dev/null
     echo
-    set -x && peer lifecycle chaincode approveformyorg --channelID mychannel --name asset-transfer -v 0 --package-id $CHAINCODE_ID --sequence 1 --connTimeout 15s && { set +x; } 2>/dev/null
+    set -x && peer lifecycle chaincode approveformyorg --channelID mychannel -o $ORDERER_ENDPOINT --name asset-transfer -v 0 --package-id $CHAINCODE_ID --sequence 1 --connTimeout 15s && { set +x; } 2>/dev/null
     echo
-    set -x && peer lifecycle chaincode commit --channelID mychannel --name asset-transfer -v 0 --sequence 1  --connTimeout 15s && { set +x; } 2>/dev/null
+    set -x && peer lifecycle chaincode commit --channelID mychannel -o $ORDERER_ENDPOINT --name asset-transfer -v 0 --sequence 1  --connTimeout 15s && { set +x; } 2>/dev/null
     echo
     set -x && peer lifecycle chaincode querycommitted --channelID=mychannel && { set +x; } 2>/dev/null
     echo
@@ -284,7 +288,7 @@ cloud-frontend:
 # ANSIBLE PLAYBOOK TARGETS                                                    #
 ###############################################################################
 
-ansible_image   := env_var_or_default("ANSIBLE_IMAGE",      "ghcr.io/ibm-blockchain/ofs-ansibe:sha-ac6fd82")
+ansible_image   := env_var_or_default("ANSIBLE_IMAGE",      "ghcr.io/hyperledger-labs/fabric-ansible:latest")
 namespace       := env_var_or_default("WORKSHOP_NAMESPACE", "fabricinfra")
 
 # just set up everything with Ansible
@@ -333,13 +337,13 @@ ansible-ingress:
     set -ex -o pipefail
 
     export EXTRAS=""
-    if [ -f "/_cfg/k8s_context.yaml" ]; then    
+    if [ -f "/_cfg/k8s_context.yaml" ]; then
         export EXTRAS=" -e KUBECONFIG=/_cfg/k8s_context.yaml"
     fi
 
     docker run \
         --rm \
-        -v ${HOME}/.kube/:/home/ibp-user/.kube/ \
+        -v ${HOME}/.kube/:/home/hlf-user/.kube/ \
         -v ${CWDIR}/_cfg:/_cfg \
         -v $(pwd)/infrastructure/kind_console_ingress:/playbooks \
         --network=host ${EXTRAS} \
@@ -355,13 +359,13 @@ ansible-operator:
     set -ex -o pipefail
 
     export EXTRAS=""
-    if [ -f "/_cfg/k8s_context.yaml" ]; then    
+    if [ -f "/_cfg/k8s_context.yaml" ]; then
         export EXTRAS=" -e KUBECONFIG=/_cfg/k8s_context.yaml"
     fi
 
     docker run \
         --rm \
-        -v ${HOME}/.kube/:/home/ibp-user/.kube/ \
+        -v ${HOME}/.kube/:/home/hlf-user/.kube/ \
         -v ${CWDIR}/_cfg:/_cfg \
         -v $(pwd)/infrastructure/operator_console_playbooks:/playbooks ${EXTRAS} \
         --network=host \
@@ -374,13 +378,13 @@ ansible-console:
     set -ex -o pipefail
 
     export EXTRAS=""
-    if [ -f "/_cfg/k8s_context.yaml" ]; then    
+    if [ -f "/_cfg/k8s_context.yaml" ]; then
         export EXTRAS=" -e KUBECONFIG=/_cfg/k8s_context.yaml"
     fi
 
     docker run \
         --rm \
-        -v ${HOME}/.kube/:/home/ibp-user/.kube/ \
+        -v ${HOME}/.kube/:/home/hlf-user/.kube/ \
         -v $(pwd)/infrastructure/operator_console_playbooks:/playbooks  ${EXTRAS} \
         -v ${CWDIR}/_cfg:/_cfg \
         --network=host \
@@ -411,14 +415,14 @@ ansible-network: ansible-auth
     set -ex -o pipefail
 
     export EXTRAS=""
-    if [ -f "/_cfg/k8s_context.yaml" ]; then    
+    if [ -f "/_cfg/k8s_context.yaml" ]; then
         export EXTRAS=" -e KUBECONFIG=/_cfg/k8s_context.yaml"
     fi
 
     docker run \
         --rm \
         -u $(id -u) \
-        -v ${HOME}/.kube/:/home/ibp-user/.kube/ \
+        -v ${HOME}/.kube/:/home/hlf-user/.kube/ \
         -v ${CWDIR}/infrastructure/fabric_network_playbooks:/playbooks  ${EXTRAS} \
         -v ${CWDIR}/_cfg:/_cfg \
         --network=host \
@@ -450,7 +454,7 @@ ansible-build-chaincode:
 
     # note the double { } for escaping
     export IMG_SHA=$(docker inspect --format='{{{{index .RepoDigests 0}}' {{external_repo_endpoint}}/${IMAGE_NAME} | cut -d'@' -f2)
-    weft chaincode package k8s --name {{internal_repo_endpoint}}/${IMAGE_NAME} --digest ${IMG_SHA} --label {{chaincode_name}} 
+    weft chaincode package k8s --name {{internal_repo_endpoint}}/${IMAGE_NAME} --digest ${IMG_SHA} --label {{chaincode_name}}
     mv {{chaincode_name}}.tgz ${CWDIR}/_cfg
     popd
 
@@ -461,7 +465,7 @@ ansible-deploy-chaincode:
     set -ex -o pipefail
 
     export EXTRAS=""
-    if [ -f "/_cfg/k8s_context.yaml" ]; then    
+    if [ -f "/_cfg/k8s_context.yaml" ]; then
         export EXTRAS=" -e KUBECONFIG=/_cfg/k8s_context.yaml"
     fi
 
@@ -469,7 +473,7 @@ ansible-deploy-chaincode:
     docker run \
         --rm \
         -u $(id -u) \
-        -v ${HOME}/.kube/:/home/ibp-user/.kube/ \
+        -v ${HOME}/.kube/:/home/hlf-user/.kube/ \
         -v ${CWDIR}/infrastructure/production_chaincode_playbooks:/playbooks ${EXTRAS} \
         -v ${CWDIR}/_cfg:/_cfg \
         --network=host \
@@ -479,7 +483,7 @@ ansible-deploy-chaincode:
     docker run \
         --rm \
         -u $(id -u) \
-        -v ${HOME}/.kube/:/home/ibp-user/.kube/ \
+        -v ${HOME}/.kube/:/home/hlf-user/.kube/ \
         -v ${CWDIR}/infrastructure/production_chaincode_playbooks:/playbooks ${EXTRAS} \
         -v ${CWDIR}/_cfg:/_cfg \
         --network=host \
@@ -489,7 +493,7 @@ ansible-deploy-chaincode:
     docker run \
         --rm \
         -u $(id -u) \
-        -v ${HOME}/.kube/:/home/ibp-user/.kube/ \
+        -v ${HOME}/.kube/:/home/hlf-user/.kube/ \
         -v ${CWDIR}/infrastructure/production_chaincode_playbooks:/playbooks ${EXTRAS} \
         -v ${CWDIR}/_cfg:/_cfg \
         --network=host \
@@ -502,14 +506,14 @@ ansible-ready-application:
     set -ex -o pipefail
 
     export EXTRAS=""
-    if [ -f "/_cfg/k8s_context.yaml" ]; then    
+    if [ -f "/_cfg/k8s_context.yaml" ]; then
         export EXTRAS=" -e KUBECONFIG=/_cfg/k8s_context.yaml"
     fi
 
     docker run \
         --rm \
         -u $(id -u) \
-        -v ${HOME}/.kube/:/home/ibp-user/.kube/ \
+        -v ${HOME}/.kube/:/home/hlf-user/.kube/ \
         -v ${CWDIR}/infrastructure/production_chaincode_playbooks:/playbooks ${EXTRAS} \
         -v ${CWDIR}/_cfg:/_cfg \
         --network=host \

@@ -12,6 +12,12 @@ export CLIENT_LANGUAGE=${CLIENT_LANGUAGE:-typescript}
 export CHAINCODE_LANGUAGE=${CHAINCODE_LANGUAGE:-java}
 export TEST_NETWORK_CHAINCODE_BUILDER=${CHAINCODE_BUILDER:-ccaas}
 
+# Fabric version
+export TEST_NETWORK_FABRIC_VERSION=${FABRIC_VERSION:-}
+
+# Orderer parameters
+export TEST_NETWORK_ORDERER_TYPE=${ORDERER_TYPE:-raft}
+
 # test-network-k8s parameters
 export TEST_TAG=$(git describe)
 export TEST_NETWORK_KIND_CLUSTER_NAME=${TEST_NETWORK_KIND_CLUSTER_NAME:-kind}
@@ -28,7 +34,7 @@ export CHAINCODE_NAME=${TEST_NETWORK_CHAINCODE_NAME:-asset-transfer-basic}
 export MSP_ID=${MSP_ID:-Org1MSP}
 export CRYPTO_PATH=${CRYPTO_PATH:-../../test-network-k8s/build/channel-msp/peerOrganizations/org1}
 export KEY_DIRECTORY_PATH=${KEY_DIRECTORY_PATH:-../../test-network-k8s/build/enrollments/org1/users/org1admin/msp/keystore}
-export CERT_PATH=${CERT_PATH:-../../test-network-k8s/build/enrollments/org1/users/org1admin/msp/signcerts/cert.pem}
+export CERT_DIRECTORY_PATH=${CERT_DIRECTORY_PATH:-../../test-network-k8s/build/enrollments/org1/users/org1admin/msp/signcerts}
 export TLS_CERT_PATH=${TLS_CERT_PATH:-../../test-network-k8s/build/channel-msp/peerOrganizations/org1/msp/tlscacerts/tlsca-signcert.pem}
 export PEER_ENDPOINT=${PEER_ENDPOINT:-org1-peer1.localho.st:443}
 export PEER_HOST_ALIAS=${PEER_HOST_ALIAS:-org1-peer1.localho.st}
@@ -79,6 +85,7 @@ trap "quitterLaScene" EXIT
 
 createNetwork
 
+sleep 5
 print "Inserting and querying assets"
 ( ./network chaincode metadata $CHAINCODE_NAME \
   && ./network chaincode invoke $CHAINCODE_NAME '{"Args":["InitLedger"]}' \

@@ -4,15 +4,21 @@
 #
 set -eu
 
-if [ "$(uname)" = "Linux" ] ; then
+if [ "$(uname)" = "Linux" ] || [  -d config ]
+then
   CCADDR="127.0.0.1"
 else
   CCADDR="host.docker.internal"
 fi
 
+if [  -d config  ] ; then
+  export FABRIC_CFG_PATH="${PWD}"/config
+else
+  export FABRIC_CFG_PATH="${PWD}"/../config
+fi
+
 # look for binaries in local dev environment /build/bin directory and then in local samples /bin directory
 export PATH="${PWD}"/../../fabric/build/bin:"${PWD}"/../bin:"$PATH"
-export FABRIC_CFG_PATH="${PWD}"/../config
 
 export FABRIC_LOGGING_SPEC=debug:cauthdsl,policies,msp,grpc,peer.gossip.mcs,gossip,leveldbhelper=info
 export CORE_PEER_TLS_ENABLED=true
@@ -22,8 +28,8 @@ export CORE_PEER_TLS_ROOTCERT_FILE="${PWD}"/crypto-config/peerOrganizations/org1
 export CORE_PEER_ID=peer0.org1.example.com
 export CORE_PEER_ADDRESS=127.0.0.1:7051
 export CORE_PEER_LISTENADDRESS=127.0.0.1:7051
-export CORE_PEER_CHAINCODEADDRESS="${CCADDR}":7052
-export CORE_PEER_CHAINCODELISTENADDRESS=127.0.0.1:7052
+export CORE_PEER_CHAINCODEADDRESS="${CORE_PEER_CHAINCODEADDRESS_HOST_OVERRIDE:-${CCADDR}}":7052
+export CORE_PEER_CHAINCODELISTENADDRESS="${CORE_PEER_CHAINCODELISTENADDRESS_HOST_OVERRIDE:-127.0.0.1}":7052
 # bootstrap peer is the other peer in the same org
 export CORE_PEER_GOSSIP_BOOTSTRAP=127.0.0.1:7053
 export CORE_PEER_GOSSIP_EXTERNALENDPOINT=127.0.0.1:7051
@@ -38,7 +44,7 @@ export CORE_LEDGER_SNAPSHOTS_ROOTDIR="${PWD}"/data/peer0.org1.example.com/snapsh
 # export CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=127.0.0.1:5984
 # export CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
 # export CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=password
-# docker run --publish 5984:5984 --detach -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=password --name couchdb1 couchdb:3.1.1
+# docker run --publish 5984:5984 --detach -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=password --name couchdb1 couchdb:3.3.2
 
 # start peer
 peer node start
